@@ -56,6 +56,11 @@ button {
     font-weight: bold;
 }
 
+.slider {
+    width: 100%;
+    margin-top: 10px;
+}
+
 .hidden {
     display: none;
 }
@@ -76,6 +81,12 @@ button {
 
 <button class="btn-gray" onclick="selectImage()">📷 SELECT PHOTO</button>
 <button class="btn-gray" onclick="applyWatermark()">⚙️ GENERATE WATERMARK</button>
+
+<div class="card">
+    <label>Opacidad</label>
+    <input type="range" id="opacity" class="slider" min="0" max="1" step="0.05" value="0.2">
+</div>
+
 <button class="btn-green" onclick="download()">⬇️ DOWNLOAD</button>
 
 </div>
@@ -88,7 +99,6 @@ let baseImage = new Image();
 let logo = new Image();
 let finalImage = null;
 
-// Cargar logo automáticamente
 logo.src = "logo.png";
 
 // Seleccionar imagen
@@ -101,7 +111,7 @@ document.getElementById('upload').addEventListener('change', function(e) {
     baseImage.src = URL.createObjectURL(file);
 });
 
-// Mostrar preview inicial
+// Preview inicial
 baseImage.onload = function() {
     const ratio = Math.min(800 / baseImage.width, 800 / baseImage.height);
 
@@ -111,7 +121,7 @@ baseImage.onload = function() {
     ctx.drawImage(baseImage, 0, 0, canvas.width, canvas.height);
 };
 
-// Aplicar marca de agua (PRO)
+// Aplicar watermark
 function applyWatermark() {
 
     if (!baseImage.src) {
@@ -122,31 +132,35 @@ function applyWatermark() {
     const exportCanvas = document.createElement('canvas');
     const exportCtx = exportCanvas.getContext('2d');
 
-    // TAMAÑO REAL
+    // Tamaño real (sin pérdida)
     exportCanvas.width = baseImage.width;
     exportCanvas.height = baseImage.height;
 
-    // Imagen original
     exportCtx.drawImage(baseImage, 0, 0);
 
-    // CONFIGURACIÓN
-    const logoSize = 120;
+    const opacity = document.getElementById("opacity").value;
     const spacing = 40;
-    const opacity = 0.2;
+
+    // 🔥 LOGO HORIZONTAL (control por ancho)
+    const targetWidth = 250;
+
+    const aspectRatio = logo.height / logo.width;
+    const logoWidth = targetWidth;
+    const logoHeight = targetWidth * aspectRatio;
 
     exportCtx.globalAlpha = opacity;
 
     // Línea centrada
-    const centerY = exportCanvas.height / 2 - logoSize / 2;
+    const centerY = exportCanvas.height / 2 - logoHeight / 2;
 
     // Repetición horizontal
-    for (let x = 0; x < exportCanvas.width; x += (logoSize + spacing)) {
-        exportCtx.drawImage(logo, x, centerY, logoSize, logoSize);
+    for (let x = 0; x < exportCanvas.width; x += (logoWidth + spacing)) {
+        exportCtx.drawImage(logo, x, centerY, logoWidth, logoHeight);
     }
 
     exportCtx.globalAlpha = 1;
 
-    // PREVIEW (escala solo visual)
+    // Preview (solo visual)
     const ratio = Math.min(800 / exportCanvas.width, 800 / exportCanvas.height);
 
     canvas.width = exportCanvas.width * ratio;
@@ -154,11 +168,11 @@ function applyWatermark() {
 
     ctx.drawImage(exportCanvas, 0, 0, canvas.width, canvas.height);
 
-    // GUARDAR imagen final REAL
+    // Guardar resultado real
     finalImage = exportCanvas;
 }
 
-// Descargar SIN perder calidad
+// Descargar imagen en calidad original
 function download() {
     if (!finalImage) {
         alert("Primero genera la marca de agua");
