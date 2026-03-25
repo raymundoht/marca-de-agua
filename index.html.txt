@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Watermark App</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #1c1c1e;
+    color: white;
+    text-align: center;
+}
+
+.container {
+    padding: 20px;
+}
+
+.title {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+.card {
+    background: #2c2c2e;
+    border-radius: 20px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+canvas {
+    width: 100%;
+    border-radius: 15px;
+}
+
+button {
+    width: 100%;
+    padding: 15px;
+    border: none;
+    border-radius: 15px;
+    font-size: 16px;
+    margin-top: 10px;
+}
+
+.btn-gray {
+    background: #3a3a3c;
+    color: white;
+}
+
+.btn-green {
+    background: #34c759;
+    color: white;
+    font-weight: bold;
+}
+
+.hidden {
+    display: none;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="title">💧 Watermark App</div>
+
+<div class="card">
+    <canvas id="canvas"></canvas>
+</div>
+
+<input type="file" id="upload" accept="image/*" class="hidden">
+
+<button class="btn-gray" onclick="selectImage()">📷 SELECT PHOTO</button>
+<button class="btn-gray" onclick="applyWatermark()">⚙️ GENERATE WATERMARK</button>
+<button class="btn-green" onclick="download()">⬇️ DOWNLOAD</button>
+
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+let baseImage = new Image();
+let logo = new Image();
+let finalImage = null;
+
+// Cargar logo automáticamente
+logo.src = "logo.png";
+
+// Seleccionar imagen
+function selectImage() {
+    document.getElementById('upload').click();
+}
+
+document.getElementById('upload').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    baseImage.src = URL.createObjectURL(file);
+});
+
+// Mostrar preview inicial
+baseImage.onload = function() {
+    const ratio = Math.min(800 / baseImage.width, 800 / baseImage.height);
+
+    canvas.width = baseImage.width * ratio;
+    canvas.height = baseImage.height * ratio;
+
+    ctx.drawImage(baseImage, 0, 0, canvas.width, canvas.height);
+};
+
+// Aplicar marca de agua (PRO)
+function applyWatermark() {
+
+    if (!baseImage.src) {
+        alert("Primero selecciona una imagen");
+        return;
+    }
+
+    const exportCanvas = document.createElement('canvas');
+    const exportCtx = exportCanvas.getContext('2d');
+
+    // TAMAÑO REAL
+    exportCanvas.width = baseImage.width;
+    exportCanvas.height = baseImage.height;
+
+    // Imagen original
+    exportCtx.drawImage(baseImage, 0, 0);
+
+    // CONFIGURACIÓN
+    const logoSize = 120;
+    const spacing = 40;
+    const opacity = 0.2;
+
+    exportCtx.globalAlpha = opacity;
+
+    // Línea centrada
+    const centerY = exportCanvas.height / 2 - logoSize / 2;
+
+    // Repetición horizontal
+    for (let x = 0; x < exportCanvas.width; x += (logoSize + spacing)) {
+        exportCtx.drawImage(logo, x, centerY, logoSize, logoSize);
+    }
+
+    exportCtx.globalAlpha = 1;
+
+    // PREVIEW (escala solo visual)
+    const ratio = Math.min(800 / exportCanvas.width, 800 / exportCanvas.height);
+
+    canvas.width = exportCanvas.width * ratio;
+    canvas.height = exportCanvas.height * ratio;
+
+    ctx.drawImage(exportCanvas, 0, 0, canvas.width, canvas.height);
+
+    // GUARDAR imagen final REAL
+    finalImage = exportCanvas;
+}
+
+// Descargar SIN perder calidad
+function download() {
+    if (!finalImage) {
+        alert("Primero genera la marca de agua");
+        return;
+    }
+
+    const link = document.createElement('a');
+    link.download = "imagen.png";
+    link.href = finalImage.toDataURL("image/png");
+    link.click();
+}
+</script>
+
+</body>
+</html>
